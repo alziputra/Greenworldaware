@@ -1,10 +1,10 @@
-import axios from 'axios';
-import { createContext, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ACCOUNT_KEY, TOKEN } from '../constants/Key';
-import toast from 'react-hot-toast';
-import { jwtDecode } from 'jwt-decode';
+import axios from "axios";
+import { createContext, useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { useNavigate, useParams } from "react-router-dom";
+import { ACCOUNT_KEY, TOKEN } from "../constants/Key";
+import toast from "react-hot-toast";
+import { jwtDecode } from "jwt-decode";
 
 export const UserContext = createContext({
   handleLogin: async () => {},
@@ -51,7 +51,7 @@ export const UserContextProvider = ({ children }) => {
           setUsers(response.data.data);
         })
         .catch((error) => {
-          console.error('Internal server error', error.message);
+          console.error("Internal server error", error.message);
         });
     };
     getUsers();
@@ -67,7 +67,7 @@ export const UserContextProvider = ({ children }) => {
           setLoadingUser(false);
         })
         .catch((error) => {
-          console.error('Internal server error', error.message);
+          console.error("Internal server error", error.message);
         });
     };
     getUserById();
@@ -75,45 +75,34 @@ export const UserContextProvider = ({ children }) => {
 
   const handleLogin = async (email, password) => {
     setLoading(true);
-    if (password.trim() == '' || email.trim() == '') {
-      toast.error('Form wajib terisi semua');
+    if (!email.trim() || !password.trim()) {
+      toast.error("Form wajib terisi semua");
       setLoading(false);
-    } else {
-      await axios
-        .post(
-          `${import.meta.env.VITE_BASE_URL}/users/login`,
-          {
-            email,
-            password,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-        .then((response) => {
-          if (response.status === 200) {
-            localStorage.setItem(TOKEN, response.data.data);
-            const token = JSON.stringify(localStorage.getItem(TOKEN));
-            const decoded = jwtDecode(token);
-            localStorage.setItem(ACCOUNT_KEY, JSON.stringify(decoded));
-            navigate('/');
-          } else if (response.status === 404) {
-            toast.error('email or password is wrong');
-            navigate('/');
-          } else {
-            toast.error('Internal server error');
-          }
-        })
-        .catch((error) => {
-          if (error.response.status === 404) {
-            toast.error('email or password is wrong');
-          } else {
-            toast.error('Internal server error');
-          }
-        });
+      return;
+    }
 
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, { email, password }, { headers: { "Content-Type": "application/json" } });
+
+      if (response && response.status === 200) {
+        const token = response.data.token;
+        localStorage.setItem(TOKEN, token);
+        const decoded = jwtDecode(token);
+        localStorage.setItem(ACCOUNT_KEY, JSON.stringify(decoded));
+        setUserData(decoded);
+        setToken(token);
+        navigate("/");
+      } else if (response && response.status === 404) {
+        toast.error("Email or password is wrong");
+        navigate("/login");
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        toast.error("Email or password is wrong");
+      } else {
+        toast.error("Internal server error");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -127,8 +116,8 @@ export const UserContextProvider = ({ children }) => {
 
   const handleRegister = async (firstName, lastName, email, password, gender) => {
     setLoading(true);
-    if (password.trim() === '' || firstName.trim() === '' || lastName.trim() === '' || email.trim() == '') {
-      toast.error('Form wajib terisi semua');
+    if (password.trim() === "" || firstName.trim() === "" || lastName.trim() === "" || email.trim() == "") {
+      toast.error("Form wajib terisi semua");
       setLoading(false);
     } else {
       await axios
@@ -140,28 +129,28 @@ export const UserContextProvider = ({ children }) => {
             email,
             password,
             gender,
-            role: 'user',
+            role: "user",
           },
           {
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           }
         )
         .then((response) => {
           console.log(response);
           if (response.status === 406) {
-            toast.error('Email sudah digunakan');
+            toast.error("Email sudah digunakan");
           } else if (response.status === 201) {
-            toast.success('Berhasil registrasi');
-            navigate('/login');
+            toast.success("Berhasil registrasi");
+            navigate("/login");
           } else {
-            toast.error('Internal error');
+            toast.error("Internal error");
           }
         })
         .catch((error) => {
           if (error.response.status === 406) {
-            toast.error('Email sudah digunakan');
+            toast.error("Email sudah digunakan");
           } else {
             toast.error(error.message);
           }

@@ -1,11 +1,11 @@
-import { useContext, useState } from 'react';
-import { UserContext } from '../context/UserContext';
-import Button from '../layout/Button';
-import { Link, Navigate } from 'react-router-dom';
+import { useContext, useState } from "react";
+import { UserContext } from "../context/UserContext";
+import Button from "../layout/Button";
+import { Link, Navigate } from "react-router-dom";
 
 function FormLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { userData, handleLogin, loading } = useContext(UserContext);
 
   const handleSubmit = (e) => {
@@ -17,7 +17,7 @@ function FormLogin() {
     <div className="flex flex-row-reverse w-full ">
       {userData && <Navigate to="/" replace={true} />}
 
-      <img className="relative filter bg-neutral-400 w-1/2 h-screen max-[980px]:hidden object-cover" src="https://source.unsplash.com/random/1920x1080/?trash" />
+      <img className="relative filter bg-neutral-400 w-1/2 h-screen max-[980px]:hidden object-cover" src="https://source.unsplash.com/random/1920x1080/?trash" alt="Background" />
       <div className="absolute flex items-end w-1/2 h-screen max-[980px]:hidden overlay">
         <blockquote className="text-white p-10">&quot; Embrace the power of conscious choices, for every reduction in waste is a step towards a cleaner, greener tomorrow.&quot; #LessWasteMoreHope</blockquote>
       </div>
@@ -29,12 +29,12 @@ function FormLogin() {
         <input className="rounded-lg w-full" type="email" placeholder="Email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
         <label>Password: </label>
-        <input className="rounded-lg w-full" type="password" placeholder="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input className="rounded-lg w-full" type="password" placeholder="Password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-        <Button type="daftar" title="Masuk" disabled={loading} />
+        <Button type="submit" title="Masuk" disabled={loading} />
 
         <p className="text-sm font-medium">
-          Belum punya akun?{' '}
+          Belum punya akun?{" "}
           <Link to="/register" className="text-orange-300">
             Register
           </Link>
