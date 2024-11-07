@@ -16,56 +16,55 @@ export const PetitionContext = createContext({
 
 export const PetitionContextProvider = ({ children }) => {
   const [petitions, setPetitions] = useState([]);
-  const [detailPetition, setDetailPetition] = useState([]);
+  const [detailPetition, setDetailPetition] = useState(null); // Ubah default menjadi null untuk validasi
   const [loading, setLoading] = useState(false);
   const [loadingButton, setLoadingButton] = useState(false);
 
   const { id } = useParams();
-
   const { userData } = useContext(UserContext);
-
   const token = localStorage.getItem(TOKEN);
 
-  // render petitions
+  // Fetch all petitions
   const getPetitions = async () => {
     setLoading(true);
-    await axios
-      .get(`${import.meta.env.VITE_BASE_URL}/petitions`)
-      .then((response) => {
-        const petitionsData = response.data.data;
-        setPetitions(petitionsData);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Internal server error", error.message);
-      });
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/petitions`);
+      setPetitions(response.data.data);
+    } catch (error) {
+      console.error("Internal server error", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
   useEffect(() => {
     getPetitions();
   }, []);
 
+  // Fetch petition by ID if ID exists
   const getPetitionByID = async () => {
+    if (!id) return; // Hanya lanjutkan jika `id` ada
+
     setLoading(true);
-    await axios
-      .get(`${import.meta.env.VITE_BASE_URL}/petitions/${id ? id : 1}`)
-      .then((response) => {
-        const petitionDetailData = response.data.data;
-        setDetailPetition(petitionDetailData);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Internal server error", error.message);
-      });
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/petitions/${id}`);
+      setDetailPetition(response.data.data);
+    } catch (error) {
+      console.error("Internal server error", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
   useEffect(() => {
-    getPetitionByID();
+    getPetitionByID(); // Panggil hanya jika `id` ada
   }, [id]);
 
-  // add signature
+  // Add signature
   const handleSignature = async (petitionId) => {
     setLoadingButton(true);
-    await axios
-      .post(
+    try {
+      await axios.post(
         `${import.meta.env.VITE_BASE_URL}/signatures`,
         {
           petitionId,
@@ -77,19 +76,32 @@ export const PetitionContextProvider = ({ children }) => {
             Authorization: `Bearer ${token}`,
           },
         }
-      )
-      .catch((error) => {
-        if (error.response.status === 403) {
-          toast.error("Kamu belum login");
-        } else {
-          toast.error(error.message);
-        }
-      });
-    await getPetitionByID();
-    setLoadingButton(false);
+      );
+      await getPetitionByID(); // Refresh data petition setelah menambahkan signature
+    } catch (error) {
+      if (error.response?.status === 403) {
+        toast.error("Kamu belum login");
+      } else {
+        toast.error(error.message || "Error occurred while adding signature");
+      }
+    } finally {
+      setLoadingButton(false);
+    }
   };
 
-  return <PetitionContext.Provider value={{ petitions, detailPetition, loading, loadingButton, handleSignature }}>{children}</PetitionContext.Provider>;
+  return (
+    <PetitionContext.Provider
+      value={{
+        petitions,
+        detailPetition,
+        loading,
+        loadingButton,
+        handleSignature,
+      }}
+    >
+      {children}
+    </PetitionContext.Provider>
+  );
 };
 
 PetitionContextProvider.propTypes = {
