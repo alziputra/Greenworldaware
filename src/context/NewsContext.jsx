@@ -14,13 +14,18 @@ const NewsProvider = ({ children }) => {
   const [newsDetail, setNewsDetail] = useState(null);
 
   const { id } = useParams();
+  const baseURL = import.meta.env.VITE_BASE_URL; // Pastikan ini sesuai di file .env
 
   useEffect(() => {
     const getNews = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/news`);
-        dispatch({ type: "SET_NEWS", payload: response.data.data });
+        const response = await axios.get(`${baseURL}/news`);
+        const newsWithFullImagePath = response.data.data.map(item => ({
+          ...item,
+          image: `${baseURL}${item.image}` // Menambahkan URL dasar ke path gambar
+        }));
+        dispatch({ type: "SET_NEWS", payload: newsWithFullImagePath });
       } catch (error) {
         toast.error(error.message || "Failed to fetch news data");
       } finally {
@@ -38,8 +43,12 @@ const NewsProvider = ({ children }) => {
       }
       setLoadingDetail(true);
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/news/${id}`);
-        setNewsDetail(response.data.data);
+        const response = await axios.get(`${baseURL}/news/${id}`);
+        const newsItemWithFullImagePath = {
+          ...response.data.data,
+          image: `${baseURL}${response.data.data.image}` // Menambahkan URL dasar ke path gambar
+        };
+        setNewsDetail(newsItemWithFullImagePath);
       } catch (error) {
         toast.error(error.message || "Failed to fetch news details");
       } finally {
@@ -63,7 +72,7 @@ const NewsReducer = (news, action) => {
     case "SET_NEWS":
       return action.payload;
     case "REMOVE_NEWS":
-      return news.filter((item) => item.id !== action.payload); // Filter news yang dihapus
+      return news.filter((item) => item.id !== action.payload);
     default:
       return news;
   }

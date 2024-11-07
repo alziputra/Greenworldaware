@@ -13,14 +13,19 @@ const formatDate = (dateString) => {
 
 const NewsCarousel = () => {
   const [newsData, setNewsData] = useState([]);
+  const baseURL = import.meta.env.VITE_BASE_URL; // Pastikan URL dasar ini sesuai di .env
 
   useEffect(() => {
     const fetchNewsData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/news`);
+        const response = await fetch(`${baseURL}/news`);
         if (response.ok) {
           const data = await response.json();
-          setNewsData(data.data);
+          const newsWithFullImagePath = data.data.map((item) => ({
+            ...item,
+            image: `${baseURL}${item.image}`, // Menambahkan baseURL ke path gambar
+          }));
+          setNewsData(newsWithFullImagePath);
         } else {
           console.error("Failed to fetch news data");
         }
