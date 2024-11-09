@@ -13,7 +13,7 @@ const formatDate = (dateString) => {
 
 const NewsCarousel = () => {
   const [newsData, setNewsData] = useState([]);
-  const baseURL = import.meta.env.VITE_BASE_URL; // Pastikan URL dasar ini sesuai di .env
+  const baseURL = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
     const fetchNewsData = async () => {
@@ -21,11 +21,7 @@ const NewsCarousel = () => {
         const response = await fetch(`${baseURL}/news`);
         if (response.ok) {
           const data = await response.json();
-          const newsWithFullImagePath = data.data.map((item) => ({
-            ...item,
-            image: `${baseURL}${item.image}`, // Menambahkan baseURL ke path gambar
-          }));
-          setNewsData(newsWithFullImagePath);
+          setNewsData(data.data);
         } else {
           console.error("Failed to fetch news data");
         }
@@ -69,7 +65,7 @@ const NewsCarousel = () => {
           {newsData.map((item) => (
             <SwiperSlide key={item.id} className="relative">
               <div className="flex items-end h-64">
-                <img src={item.image} alt={formatDate(item.createdAt)} className="object-cover w-full h-full rounded" />
+                <img src={item.image || "https://via.placeholder.com/600x400?text=No+Image+Available"} alt={formatDate(item.createdAt)} className="object-cover w-full h-full rounded" />
               </div>
               <div className="py-4 text-black mb-10">
                 <h2 className="text-lg font-bold">{formatDate(item.createdAt)}</h2>
