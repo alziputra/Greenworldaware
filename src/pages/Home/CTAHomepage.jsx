@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import Button from '../../layout/Button';
+import { Link } from "react-router-dom";
+import Button from "../../layout/Button";
 
 const CTAHomepage = () => {
   return (
@@ -16,7 +16,7 @@ const CTAHomepage = () => {
         </div>
       </div>
       <div className="absolute -z-10 object-cover">
-        <img className="object-cover h-screen" src="https://imgur.com/zH7okQk.png" alt="background" />
+        <img className="object-cover h-screen" src="https://cdn.pixabay.com/photo/2015/05/08/10/37/green-757879_640.jpg" alt="background" />
       </div>
     </div>
   );

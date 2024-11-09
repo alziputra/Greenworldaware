@@ -1,8 +1,7 @@
-import { createContext, useEffect, useReducer, useState } from "react";
+import { createContext, useEffect, useReducer, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useParams } from "react-router-dom";
 
 export const NewsContext = createContext(null);
 export const NewsContextDispatch = createContext(null);
@@ -10,33 +9,40 @@ export const NewsContextDispatch = createContext(null);
 const NewsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [news, dispatch] = useReducer(NewsReducer, []);
   const [newsDetail, setNewsDetail] = useState(null);
 
-  const { id } = useParams();
-  const baseURL = import.meta.env.VITE_BASE_URL; // Pastikan ini sesuai di file .env
+  const baseURL = import.meta.env.VITE_BASE_URL;
 
-  useEffect(() => {
-    const getNews = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${baseURL}/news`);
-        const newsWithFullImagePath = response.data.data.map(item => ({
-          ...item,
-          image: `${baseURL}${item.image}` // Menambahkan URL dasar ke path gambar
-        }));
-        dispatch({ type: "SET_NEWS", payload: newsWithFullImagePath });
-      } catch (error) {
-        toast.error(error.message || "Failed to fetch news data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    getNews();
-  }, []);
+  const initialState = [];
+  const NewsReducer = (news, action) => {
+    switch (action.type) {
+      case "SET_NEWS":
+        return action.payload;
+      case "REMOVE_NEWS":
+        return news.filter((item) => item.id !== action.payload);
+      default:
+        return news;
+    }
+  };
 
-  useEffect(() => {
-    const getNewsByID = async () => {
+  const [news, dispatch] = useReducer(NewsReducer, initialState);
+
+  // Function to fetch all news
+  const getNews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${baseURL}/news`);
+      dispatch({ type: "SET_NEWS", payload: response.data.data });
+    } catch (error) {
+      toast.error(error.message || "Failed to fetch news data");
+    } finally {
+      setLoading(false);
+    }
+  }, [baseURL]);
+
+  // Function to fetch news by ID
+  const getNewsByID = useCallback(
+    async (id) => {
       if (!id) {
         console.warn("News ID is undefined");
         return;
@@ -44,40 +50,30 @@ const NewsProvider = ({ children }) => {
       setLoadingDetail(true);
       try {
         const response = await axios.get(`${baseURL}/news/${id}`);
-        const newsItemWithFullImagePath = {
-          ...response.data.data,
-          image: `${baseURL}${response.data.data.image}` // Menambahkan URL dasar ke path gambar
-        };
-        setNewsDetail(newsItemWithFullImagePath);
+        setNewsDetail(response.data.data);
       } catch (error) {
         toast.error(error.message || "Failed to fetch news details");
       } finally {
         setLoadingDetail(false);
       }
-    };
-    getNewsByID();
-  }, [id]);
+    },
+    [baseURL]
+  );
+
+  // Fetch all news data on mount
+  useEffect(() => {
+    getNews();
+  }, [getNews]);
 
   return (
-    <NewsContext.Provider value={{ news, newsDetail, loading, loadingDetail }}>
+    <NewsContext.Provider value={{ news, newsDetail, loading, loadingDetail, getNewsByID }}>
       <NewsContextDispatch.Provider value={dispatch}>{children}</NewsContextDispatch.Provider>
     </NewsContext.Provider>
   );
 };
 
-export default NewsProvider;
-
-const NewsReducer = (news, action) => {
-  switch (action.type) {
-    case "SET_NEWS":
-      return action.payload;
-    case "REMOVE_NEWS":
-      return news.filter((item) => item.id !== action.payload);
-    default:
-      return news;
-  }
-};
-
 NewsProvider.propTypes = {
   children: PropTypes.node,
 };
+
+export default NewsProvider;

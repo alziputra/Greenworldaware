@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { UserContext } from "./UserContext";
 import { TOKEN } from "../constants/Key";
 import toast from "react-hot-toast";
@@ -16,16 +16,21 @@ export const PetitionContext = createContext({
 
 export const PetitionContextProvider = ({ children }) => {
   const [petitions, setPetitions] = useState([]);
-  const [detailPetition, setDetailPetition] = useState(null); // Ubah default menjadi null untuk validasi
+  const [detailPetition, setDetailPetition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingButton, setLoadingButton] = useState(false);
 
   const { id } = useParams();
+  const location = useLocation();
   const { userData } = useContext(UserContext);
   const token = localStorage.getItem(TOKEN);
 
-  // Fetch all petitions
+  // Fungsi untuk memeriksa apakah rute aktif adalah untuk petisi
+  const isPetitionRoute = location.pathname.startsWith("/petisi");
+
+  // Memuat semua petisi hanya jika berada di rute petisi
   const getPetitions = async () => {
+    if (!isPetitionRoute) return; // Hentikan jika bukan rute petisi
     setLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/petitions`);
@@ -39,11 +44,11 @@ export const PetitionContextProvider = ({ children }) => {
 
   useEffect(() => {
     getPetitions();
-  }, []);
+  }, [isPetitionRoute]);
 
-  // Fetch petition by ID if ID exists
+  // Memuat detail petisi berdasarkan ID hanya jika berada di rute detail petisi
   const getPetitionByID = async () => {
-    if (!id) return; // Hanya lanjutkan jika `id` ada
+    if (!id || !isPetitionRoute) return;
 
     setLoading(true);
     try {
@@ -57,19 +62,15 @@ export const PetitionContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    getPetitionByID(); // Panggil hanya jika `id` ada
-  }, [id]);
+    getPetitionByID();
+  }, [id, isPetitionRoute]);
 
-  // Add signature
   const handleSignature = async (petitionId) => {
     setLoadingButton(true);
     try {
       await axios.post(
         `${import.meta.env.VITE_BASE_URL}/signatures`,
-        {
-          petitionId,
-          userId: userData?.id,
-        },
+        { petitionId, userId: userData?.id },
         {
           headers: {
             "Content-Type": "application/json",
@@ -77,7 +78,7 @@ export const PetitionContextProvider = ({ children }) => {
           },
         }
       );
-      await getPetitionByID(); // Refresh data petition setelah menambahkan signature
+      await getPetitionByID();
     } catch (error) {
       if (error.response?.status === 403) {
         toast.error("Kamu belum login");
@@ -89,19 +90,7 @@ export const PetitionContextProvider = ({ children }) => {
     }
   };
 
-  return (
-    <PetitionContext.Provider
-      value={{
-        petitions,
-        detailPetition,
-        loading,
-        loadingButton,
-        handleSignature,
-      }}
-    >
-      {children}
-    </PetitionContext.Provider>
-  );
+  return <PetitionContext.Provider value={{ petitions, detailPetition, loading, loadingButton, handleSignature }}>{children}</PetitionContext.Provider>;
 };
 
 PetitionContextProvider.propTypes = {
