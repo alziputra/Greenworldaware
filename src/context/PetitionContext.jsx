@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 
 export const PetitionContext = createContext({
   petitions: [],
-  detailPetition: [],
+  detailPetition: null,
   loading: false,
   loadingButton: false,
   handleSignature: async () => {},
@@ -25,16 +25,20 @@ export const PetitionContextProvider = ({ children }) => {
   const { userData } = useContext(UserContext);
   const token = localStorage.getItem(TOKEN);
 
-  // Fungsi untuk memeriksa apakah rute aktif adalah untuk petisi
+  // Check if the current route is a petition route
   const isPetitionRoute = location.pathname.startsWith("/petisi");
 
-  // Memuat semua petisi hanya jika berada di rute petisi
+  // Fetch all petitions if on the petition route
   const getPetitions = async () => {
-    if (!isPetitionRoute) return; // Hentikan jika bukan rute petisi
+    if (!isPetitionRoute) return;
     setLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/petitions`);
-      setPetitions(response.data.data);
+      const petitionsData = response.data.data.map((petition) => ({
+        ...petition,
+        image: petition.image || "https://via.placeholder.com/300x200", // Placeholder if image is missing
+      }));
+      setPetitions(petitionsData);
     } catch (error) {
       console.error("Internal server error", error.message);
     } finally {
@@ -46,14 +50,17 @@ export const PetitionContextProvider = ({ children }) => {
     getPetitions();
   }, [isPetitionRoute]);
 
-  // Memuat detail petisi berdasarkan ID hanya jika berada di rute detail petisi
+  // Fetch petition details by ID if on the detail route
   const getPetitionByID = async () => {
     if (!id || !isPetitionRoute) return;
 
     setLoading(true);
     try {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/petitions/${id}`);
-      setDetailPetition(response.data.data);
+      setDetailPetition({
+        ...response.data.data,
+        image: response.data.data.image || "https://via.placeholder.com/650x400", // Placeholder if image is missing
+      });
     } catch (error) {
       console.error("Internal server error", error.message);
     } finally {
