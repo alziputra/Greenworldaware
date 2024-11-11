@@ -30,7 +30,7 @@ const News = () => {
               src={mainNews.image || "https://via.placeholder.com/650x400"}
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/650x400"; // Fallback image if the image fails to load
+                e.target.src = "https://via.placeholder.com/650x400";
               }}
               className="w-[650px] mx-auto"
               alt="Main News"
@@ -85,7 +85,7 @@ const SingleCard = ({ alt, image, date, CardDescription, CardTitle, titleHref })
         alt={alt}
         onError={(e) => {
           e.target.onerror = null;
-          e.target.src = "https://via.placeholder.com/300x200"; // Fallback image if the image fails to load
+          e.target.src = "https://via.placeholder.com/300x200";
         }}
         className="w-full rounded object-cover h-52"
       />

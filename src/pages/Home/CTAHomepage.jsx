@@ -16,7 +16,7 @@ const CTAHomepage = () => {
         </div>
       </div>
       <div className="absolute -z-10 object-cover">
-        <img className="object-cover h-screen" src="https://cdn.pixabay.com/photo/2015/05/08/10/37/green-757879_640.jpg" alt="background" />
+        <img className="object-cover h-screen" src="https://res.cloudinary.com/dxy2likbb/image/upload/v1731334946/landingpagewebbackground_1_zwxb1t.png" alt="background" />
       </div>
     </div>
   );
