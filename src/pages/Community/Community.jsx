@@ -1,5 +1,5 @@
-import PostInput from './PostInput';
-import Posts from './Posts';
+import PostInput from "./PostInput";
+import Posts from "./Posts";
 
 function Community() {
   return (

@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 import { ACCOUNT_KEY, TOKEN } from "../constants/Key";
@@ -32,205 +32,148 @@ export const PostContextProvider = ({ children }) => {
   const [postId, setPostId] = useState(1);
   const [postsById, setPostsById] = useState([]);
 
-  // loading state
   const [loading, setLoading] = useState(true);
   const [loadingDetailed, setLoadingDetailed] = useState(true);
   const [loadingPostById, setLoadingPostById] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
 
-  // loading state for button after clicked
   const [button, setButton] = useState(false);
   const [buttonPost, setButtonPost] = useState(false);
   const [buttonComment, setButtonComment] = useState(false);
 
   const token = localStorage.getItem(TOKEN);
-
   const parsedUserData = JSON.parse(localStorage.getItem(ACCOUNT_KEY));
   const id = parsedUserData?.id;
-
   const { userId } = useParams();
+  const baseURL = import.meta.env.VITE_BASE_URL;
 
-  // Render Posts
-  const getPosts = async () => {
-    await axios
-      .get(`${import.meta.env.VITE_BASE_URL}/posts`)
-      .then((response) => {
-        const postsData = response.data.data;
-        setPosts(postsData);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Internal server error", error.message);
-      });
-  };
+  const getPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${baseURL}/posts`);
+      setPosts(response.data.data);
+    } catch (error) {
+      console.error("Internal server error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [baseURL]);
 
   useEffect(() => {
     getPosts();
-  }, []);
+  }, [getPosts]);
 
   useEffect(() => {
     const getDetailedPostById = async () => {
-      const { data } = await axios.get(`${import.meta.env.VITE_BASE_URL}/posts/${postId}`);
-      setDetailedPost(data.data);
-      setLoadingDetailed(false);
+      setLoadingDetailed(true);
+      try {
+        const response = await axios.get(`${baseURL}/posts/${postId}`);
+        setDetailedPost(response.data.data);
+      } catch (error) {
+        console.error(error.message);
+      } finally {
+        setLoadingDetailed(false);
+      }
     };
     getDetailedPostById();
-  }, [postId]);
+  }, [baseURL, postId]);
 
-  const getPostsByUserId = async () => {
-    await axios
-      .get(`${import.meta.env.VITE_BASE_URL}/users/${userId}/posts`)
-      .then((response) => {
-        setPostsById(response.data.data);
-        setLoadingPostById(false);
-      })
-      .catch((error) => {
-        console.error("Internal server error", error.message);
-      });
-  };
+  const getPostsByUserId = useCallback(async () => {
+    setLoadingPostById(true);
+    try {
+      const response = await axios.get(`${baseURL}/users/${userId}/posts`);
+      setPostsById(response.data.data);
+    } catch (error) {
+      console.error("Internal server error", error.message);
+    } finally {
+      setLoadingPostById(false);
+    }
+  }, [baseURL, userId]);
+
   useEffect(() => {
-    getPostsByUserId();
-  }, [userId]);
+    if (userId) getPostsByUserId();
+  }, [getPostsByUserId, userId]);
 
-  // Render Comments
   useEffect(() => {
     setLoadingComments(true);
     const getCommentsByPostId = async () => {
-      await axios
-        .get(`${import.meta.env.VITE_BASE_URL}/comments/${postId}/posts`)
-        .then((response) => {
-          const data = response.data.data;
-          setCommentsByPost(data);
-          setLoadingComments(false);
-        })
-        .catch((error) => {
-          console.error("Internal server error", error.message);
-        });
+      try {
+        const response = await axios.get(`${baseURL}/comments/${postId}/posts`);
+        setCommentsByPost(response.data.data);
+      } catch (error) {
+        console.error("Internal server error", error.message);
+      } finally {
+        setLoadingComments(false);
+      }
     };
     getCommentsByPostId();
-  }, [postId]);
+  }, [baseURL, postId]);
 
-  // Handle Posts
-  const handlePost = async (post, fileUrl) => {
+  const handlePost = async (formData) => {
     setButtonPost(true);
-    await axios
-      .post(
-        `${import.meta.env.VITE_BASE_URL}/posts`,
-        {
-          post,
-          image: fileUrl,
-          userId: id,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .catch((error) => {
-        if (error.response.status === 403) {
-          toast.error("Kamu belum login");
-        } else {
-          toast.error(error.message);
-        }
-      });
-    await getPosts();
-    setButtonPost(false);
+    try {
+      await axios.post(`${import.meta.env.VITE_BASE_URL}/posts`, formData, { headers: { Authorization: `Bearer ${token}` } });
+      await getPosts();
+    } catch (error) {
+      toast.error(error.response?.status === 403 ? "Kamu belum login" : error.message);
+    } finally {
+      setButtonPost(false);
+    }
   };
 
-  const handleDeletePost = async (id) => {
+  const handleDeletePost = async (postId) => {
     setLoading(true);
-    await axios
-      .delete(`${import.meta.env.VITE_BASE_URL}/posts/${id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .catch((error) => {
-        if (error.response.status === 403) {
-          toast.error("Kamu belum login");
-        } else {
-          toast.error(error.message);
-        }
+    try {
+      await axios.delete(`${baseURL}/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    await getPosts();
-    setLoading(false);
+      await getPosts();
+    } catch (error) {
+      toast.error(error.response?.status === 403 ? "Kamu belum login" : error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Handle Like and Dislike
   const handleLike = async (postId, userId) => {
     setButton(true);
-    await axios
-      .post(
-        `${import.meta.env.VITE_BASE_URL}/likes`,
-        {
-          postId,
-          userId,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .catch((error) => {
-        if (error.response.status === 403) {
-          toast.error("Kamu belum login");
-        } else {
-          toast.error(error.message);
-        }
-      });
-    await getPosts();
-    await getPostsByUserId();
-    setButton(false);
+    try {
+      await axios.post(`${baseURL}/likes`, { postId, userId }, { headers: { Authorization: `Bearer ${token}` } });
+      await getPosts();
+      await getPostsByUserId();
+    } catch (error) {
+      toast.error(error.response?.status === 403 ? "Kamu belum login" : error.message);
+    } finally {
+      setButton(false);
+    }
   };
 
-  const handleDislike = async (id) => {
+  const handleDislike = async (likeId) => {
     setButton(true);
-    await axios
-      .delete(`${import.meta.env.VITE_BASE_URL}/likes/${id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .catch((error) => console.error(error.message));
-    await getPosts();
-    await getPostsByUserId();
-    setButton(false);
+    try {
+      await axios.delete(`${baseURL}/likes/${likeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await getPosts();
+      await getPostsByUserId();
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setButton(false);
+    }
   };
 
-  // Handle Comment
   const handleComment = async (comment) => {
     setButtonComment(true);
-    const { data } = await axios
-      .post(
-        `${import.meta.env.VITE_BASE_URL}/comments`,
-        {
-          postId: postId,
-          userId: id,
-          comment: comment,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-      .catch((error) => {
-        if (error.response.status === 403) {
-          toast.error("Kamu belum login");
-        } else {
-          toast.error(error.message);
-        }
-      });
-    setCommentsByPost((prevComments) => [...prevComments, data.data]);
-    await getPosts();
-    setButtonComment(false);
+    try {
+      const { data } = await axios.post(`${baseURL}/comments`, { postId, userId: id, comment }, { headers: { Authorization: `Bearer ${token}` } });
+      setCommentsByPost((prev) => [...prev, data.data]);
+      await getPosts();
+    } catch (error) {
+      toast.error(error.response?.status === 403 ? "Kamu belum login" : error.message);
+    } finally {
+      setButtonComment(false);
+    }
   };
 
   return (
